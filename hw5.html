@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Lighting & Shading</title>
+  <style>
+    body { background: #111; color: #ccc; font-family: monospace; }
+    canvas { border: 1px solid #444; }
+    .layout { display: flex; gap: 10px; align-items: flex-start; }
+    .editors { display: flex; flex-direction: column; gap: 10px; }
+    textarea {
+      background: #222;
+      color: #0f0;
+      font: 14px monospace;
+      width: 400px;
+      height: 200px;
+      box-sizing: border-box;
+    }
+    #shaderError { color: #f66; white-space: pre-wrap; width: 400px; margin: 0; }
+    .controls { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .control-row { display: flex; align-items: center; gap: 10px; }
+  </style>
+</head>
+
+<body>
+  <h2>Hierarchical Model with One Light</h2>
+  <p>Edit the shaders on the left; the canvas updates as you type.<br>
+    Drag with the mouse to rotate the model.<br>
+    Use the arrow keys and w, s keys to move the camera.<br>
+    Use the slider and dropdown to rotate about an axis; the button starts/stops spinning.</p>
+
+  <div class="layout">
+    <div class="editors">
+      <div>
+        <b>Vertex Shader</b><br>
+        <textarea id="vertEditor" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <b>Fragment Shader</b><br>
+        <textarea id="fragEditor" spellcheck="false"></textarea>
+      </div>
+      <pre id="shaderError"></pre>
+    </div>
+
+    <div>
+      <canvas id="glcanvas" width="400" height="400"></canvas>
+
+      <div class="controls">
+        <div class="control-row">
+          <label for="slider">Rotation Angle:</label>
+          <input type="range" id="slider" min="0" max="360" value="0">
+          <span id="sliderValue">0</span>
+        </div>
+        <div class="control-row">
+          <select id="axisSelect">
+            <option value="x">X Rotation</option>
+            <option value="y">Y Rotation</option>
+            <option value="z">Z Rotation</option>
+          </select>
+          <button id="spinButton">Start/Stop Rotation</button>
+        </div>
+      </div>
+
+
+    </div>
+
+    <div class="control-panel" style="font-family: sans-serif; padding: 12px; background: #222; color: #fff; width: 320px;">
+      <h3 style="margin: 4px 0 8px;">Kinematic Joint Controls</h3>
+      
+      <label for="slewSlider">Cabin Slew Yaw <span id="valSlew">0°</span></label><br>
+      <input type="range" id="slewSlider" min="-180" max="180" step="1" value="0" style="width: 100%;"><br>
+
+      <label for="boomSlider">Boom Pitch <span id="valBoom">30°</span></label><br>
+      <input type="range" id="boomSlider" min="-15" max="75" step="1" value="30" style="width: 100%;"><br>
+
+      <label for="armSlider">Forearm Pitch <span id="valArm">-45°</span></label><br>
+      <input type="range" id="armSlider" min="-90" max="45" step="1" value="-45" style="width: 100%;"><br>
+
+      <label for="bucketSlider">Bucket Curl <span id="valBucket">-20°</span></label><br>
+      <input type="range" id="bucketSlider" min="-90" max="60" step="1" value="-20" style="width: 100%;"><br>
+
+      <label><input type="checkbox" id="autoAnim"> Auto-Cycle Digging Motion</label><br>
+
+      <h3 style="margin: 12px 0 6px;">Lighting & Material Controls</h3>
+      <label><input type="checkbox" id="light1Toggle" checked> Enable Cab Worklight (Light 1)</label><br>
+      <label><input type="checkbox" id="flatShadingToggle"> Force Flat Shading</label><br>
+
+      <label for="shininessSlider">Metal Specular Shininess <span id="valShininess">32</span></label><br>
+      <input type="range" id="shininessSlider" min="1" max="128" step="1" value="32" style="width: 100%;">
+  </div>
+  </div>
+
+  <script src="transforms.js"></script>
+  <script src="models.js"></script>
+  <script src="main.js"></script>
+</body>
+
+</html>
