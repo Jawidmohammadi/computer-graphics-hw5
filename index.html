@@ -24,7 +24,7 @@
 </head>
 
 <body>
-  <h2>Hierarchical Model with One Light</h2>
+  <h2>Excavator Hierarchical Lighting & Shading</h2>
   <p>Edit the shaders on the left; the canvas updates as you type.<br>
     Drag with the mouse to rotate the model.<br>
     Use the arrow keys and w, s keys to move the camera.<br>
@@ -62,7 +62,6 @@
         </div>
       </div>
 
-
     </div>
 
     <div class="control-panel" style="font-family: sans-serif; padding: 12px; background: #222; color: #fff; width: 320px;">
@@ -82,12 +81,27 @@
 
       <label><input type="checkbox" id="autoAnim"> Auto-Cycle Digging Motion</label><br>
 
-      <h3 style="margin: 12px 0 6px;">Lighting & Material Controls</h3>
-      <label><input type="checkbox" id="light1Toggle" checked> Enable Cab Worklight (Light 1)</label><br>
+      <h3 style="margin: 12px 0 6px;">Lighting, Shading & Material Controls</h3>
+      <label><input type="checkbox" id="light1Toggle" checked> Enable Second light</label><br>
       <label><input type="checkbox" id="flatShadingToggle"> Force Flat Shading</label><br>
 
-      <label for="shininessSlider">Metal Specular Shininess <span id="valShininess">32</span></label><br>
-      <input type="range" id="shininessSlider" min="1" max="128" step="1" value="32" style="width: 100%;">
+      <label for="cabinShininessSlider">
+        Cabin Specular Shininess
+        <span id="valCabinShininess">24</span>
+      </label><br>
+      <input type="range" id="cabinShininessSlider"
+            min="1" max="128" step="1" value="24"
+            style="width: 100%;"><br>
+
+      <label for="boomShininessSlider">
+        Boom Specular Shininess
+        <span id="valBoomShininess">32</span>
+      </label><br>
+      <input type="range" id="boomShininessSlider"
+            min="1" max="128" step="1" value="32"
+            style="width: 100%;">
+
+
   </div>
   </div>
 

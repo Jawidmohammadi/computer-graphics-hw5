@@ -44,48 +44,73 @@ function createCube() {
 
 
 function createPrism() {
-  const positions = new Float32Array([
-    // Front triangular face
-     0.0,  1.0,  1.0,  // 0: Front top
-    -1.0, -1.0,  1.0,  // 1: Front bottom-left
-     1.0, -1.0,  1.0,  // 2: Front bottom-right
+  const vertices = [
+    [0.0,  1.0,  1.0],
+    [-1.0, -1.0,  1.0],
+    [1.0, -1.0,  1.0],
+    [0.0,  1.0, -1.0],
+    [-1.0, -1.0, -1.0],
+    [1.0, -1.0, -1.0]
+  ];
 
-    // Back triangular face
-     0.0,  1.0, -1.0,  // 3: Back top
-    -1.0, -1.0, -1.0,  // 4: Back bottom-left
-     1.0, -1.0, -1.0   // 5: Back bottom-right
-  ]);
+  const faces = [
+    [0, 1, 2],
+    [3, 5, 4],
+    [1, 4, 5], [1, 5, 2],
+    [0, 3, 4], [0, 4, 1],
+    [0, 2, 5], [0, 5, 3]
+  ];
 
-  const colors = new Float32Array([
-    1.0, 0.2, 0.2,
-    0.2, 1.0, 0.2,
-    0.2, 0.2, 1.0,
-    1.0, 1.0, 0.2,
-    0.2, 1.0, 1.0,
-    1.0, 0.2, 1.0
-  ]);
-  
-  const faceNormals = [[0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0]];
-  const normals = new Float32Array(faceNormals.flatMap(n => [...n, ...n, ...n, ...n]));
+  const positions = [];
+  const normals = [];
+  const indices = [];
 
-  const indices = new Uint16Array([
-    // Front triangle
-    0, 1, 2,
-    // Back triangle
-    3, 5, 4,
-    // Bottom
-    1, 4, 5,
-    1, 5, 2,
-    // Left
-    0, 3, 4,
-    0, 4, 1,
-    // Right
-    0, 2, 5,
-    0, 5, 3
-  ]);
+  for (const face of faces) {
+    const a = vertices[face[0]];
+    const b = vertices[face[1]];
+    const c = vertices[face[2]];
 
-  return { positions, colors, normals, indices };
+    // Two edges of the triangle
+    const u = [
+      b[0] - a[0],
+      b[1] - a[1],
+      b[2] - a[2]
+    ];
+
+    const v = [
+      c[0] - a[0],
+      c[1] - a[1],
+      c[2] - a[2]
+    ];
+
+    // Cross product gives the face normal
+    const nx = u[1] * v[2] - u[2] * v[1];
+    const ny = u[2] * v[0] - u[0] * v[2];
+    const nz = u[0] * v[1] - u[1] * v[0];
+
+    const length = Math.hypot(nx, ny, nz);
+
+    const normal = [
+      nx / length,
+      ny / length,
+      nz / length
+    ];
+
+    // Each triangle gets its own vertices and normals
+    for (const vertex of [a, b, c]) {
+      positions.push(...vertex);
+      normals.push(...normal);
+      indices.push(indices.length);
+    }
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
+    indices: new Uint16Array(indices)
+  };
 }
+
 
 function createPyramid() {
   const positions = new Float32Array([

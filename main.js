@@ -71,7 +71,7 @@ void main() {
   float spec0 = (diff0 > 0.0 && uShininess > 0.0) ? pow(max(dot(V, R0), 0.0), uShininess) : 0.0;  
   vec3 light0 = (uKd * baseColor * diff0 + uKs * spec0) * uLightColor0;
 
-  // Secondary Light1
+  // Secondary Light from cabin
   vec3 light1 = vec3(0.0);
   if (uEnableLight1) {
     vec3 L1 = normalize(uLightPos1 - vPosition);
@@ -140,13 +140,16 @@ function updateProgram() {
     uUseTextureLoc = gl.getUniformLocation(program, "uUseTexture");
 
     shaderError.textContent = "";
+    return true;
   } catch (e) {
-    shaderError.textContent = e.message.replace(/\0/g, "");  // some drivers end the log with \0
+    shaderError.textContent = e.message.replace(/\0/g, "");
+    return false;
   }
 }
 updateProgram();
-vertEditor.addEventListener("input", updateProgram);
-fragEditor.addEventListener("input", updateProgram);
+
+vertEditor.addEventListener("input", () => updateProgram());
+fragEditor.addEventListener("input", () => updateProgram());
 
 function bindAttribute(name, data, size = 3) {
   if (!data) return;
@@ -302,16 +305,43 @@ cabin.children.push(upperArm);
 upperArm.children.push(lowerArm);  
 lowerArm.children.push(bucket);
 
-// Extract 3x3 normal matrix from model-view matrix
+
 function getNormalMatrix(mv) {
+  // Upper-left 3x3, stored in column-major order
+  const a00 = mv[0], a01 = mv[4], a02 = mv[8];
+  const a10 = mv[1], a11 = mv[5], a12 = mv[9];
+  const a20 = mv[2], a21 = mv[6], a22 = mv[10];
+
+  const c00 = a11 * a22 - a12 * a21;
+  const c01 = a12 * a20 - a10 * a22;
+  const c02 = a10 * a21 - a11 * a20;
+
+  const det = a00 * c00 + a01 * c01 + a02 * c02;
+
+  if (Math.abs(det) < 1e-8) {
+    throw new Error("Normal matrix is not invertible");
+  }
+
+  const invDet = 1.0 / det;
+
+  // Inverse transpose, flattened column-major
   return new Float32Array([
-    mv[0], mv[1], mv[2],
-    mv[4], mv[5], mv[6],
-    mv[8], mv[9], mv[10]
+    c00 * invDet,
+    (a02 * a21 - a01 * a22) * invDet,
+    (a01 * a12 - a02 * a11) * invDet,
+
+    c01 * invDet,
+    (a00 * a22 - a02 * a20) * invDet,
+    (a02 * a10 - a00 * a12) * invDet,
+
+    c02 * invDet,
+    (a01 * a20 - a00 * a21) * invDet,
+    (a00 * a11 - a01 * a10) * invDet
   ]);
 }
 
-function drawNode(node, frame, texture, forceFlatShading, globalShininess) {
+
+function drawNode(node, frame, texture, forceFlatShading) {
   const modelViewMatrix = multiply(frame, node.shape);
   const normalMatrix = getNormalMatrix(modelViewMatrix);
 
@@ -324,11 +354,18 @@ function drawNode(node, frame, texture, forceFlatShading, globalShininess) {
   gl.uniform3fv(uKdLoc, node.material.kd);
   gl.uniform3fv(uKsLoc, node.material.ks);
 
-  // Use slider override on shiny surfaces
-  const activeShininess = (node.material.shininess > 12.0) ? globalShininess : node.material.shininess;
+
+  let activeShininess = node.material.shininess;
+
+  if (node === cabin) {
+    activeShininess = Number(cabinShininessSlider.value);
+  }
+
+  if (node === upperArm) {
+    activeShininess = Number(boomShininessSlider.value);
+  }
   gl.uniform1f(uShininessLoc, activeShininess);
 
-  // Per-node flat shading or UI global override
   const isFlat = forceFlatShading || node.material.flat;
   gl.uniform1i(uUseFlatShadingLoc, isFlat ? 1 : 0);
 
@@ -348,12 +385,12 @@ function drawNode(node, frame, texture, forceFlatShading, globalShininess) {
 }
 
 //Data structure
-function drawTree(root, rootFrame, texture, forceFlatShading, globalShininess) {
+function drawTree(root, rootFrame, texture, forceFlatShading) {
   const stack = [[root, rootFrame]];
   while (stack.length > 0) {
     const [node, parentFrame] = stack.pop();
     const frame = multiply(parentFrame, node.joint);
-    drawNode(node, frame, texture, forceFlatShading, globalShininess);
+    drawNode(node, frame, texture, forceFlatShading);
     for (const child of node.children) stack.push([child, frame]);
   }
 }
@@ -450,12 +487,16 @@ function cacheUniformLocations() {
   uUseTextureLoc = gl.getUniformLocation(program, "uUseTexture");
 }
 
-// Hook into editor compilation
 const baseUpdateProgram = updateProgram;
+
 updateProgram = function() {
-  baseUpdateProgram();
-  cacheUniformLocations();
+  const success = baseUpdateProgram();
+
+  if (success) {
+    cacheUniformLocations();
+  }
 };
+
 cacheUniformLocations();
 
 const slewSlider = document.getElementById("slewSlider");
@@ -471,14 +512,21 @@ const valBucket = document.getElementById("valBucket");
 const autoAnim = document.getElementById("autoAnim");
 const light1Toggle = document.getElementById("light1Toggle");
 const flatShadingToggle = document.getElementById("flatShadingToggle");
-const shininessSlider = document.getElementById("shininessSlider");
-const valShininess = document.getElementById("valShininess");
+
+const cabinShininessSlider = document.getElementById("cabinShininessSlider");
+
+const boomShininessSlider = document.getElementById("boomShininessSlider");
+
+const valCabinShininess = document.getElementById("valCabinShininess");
+
+const valBoomShininess = document.getElementById("valBoomShininess");
 
 slewSlider.addEventListener("input", e => valSlew.textContent = `${e.target.value}°`);
 boomSlider.addEventListener("input", e => valBoom.textContent = `${e.target.value}°`);
 armSlider.addEventListener("input", e => valArm.textContent = `${e.target.value}°`);
 bucketSlider.addEventListener("input", e => valBucket.textContent = `${e.target.value}°`);
-shininessSlider.addEventListener("input", e => valShininess.textContent = e.target.value);
+cabinShininessSlider.addEventListener("input", e => valCabinShininess.textContent = e.target.value);
+boomShininessSlider.addEventListener("input", e => valBoomShininess.textContent = e.target.value);
 
 // Dual Lights in World Coordinates
 const light0World = [4.0, 7.0, 5.0];     // Key Light (Sun)
@@ -541,7 +589,8 @@ function render(time) {
   bucket.joint = multiply(translate(0.0, 1.0, 0.0), rotateZ(radBucket));
 
 
-  drawTree(body, view, catTexture, flatShadingToggle.checked, Number(shininessSlider.value));
+  drawTree(body, view, catTexture, 
+    flatShadingToggle.checked);
 
   requestAnimationFrame(render);
 }
